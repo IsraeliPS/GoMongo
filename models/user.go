@@ -16,3 +16,9 @@ type Credentials struct {
     Password string `json:"password" validate:"required"`
 }
 
+
+type LoginResponse struct {
+    Message string `json:"message"`
+    Token string `json:"token"`
+    Expires string `json:"expires"`
+}
