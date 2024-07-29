@@ -22,3 +22,9 @@ type LoginResponse struct {
     Token string `json:"token"`
     Expires string `json:"expires"`
 }
+
+type UserResponse struct {
+    ID    primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+    Name  string             `json:"name"`
+    Email string             `json:"email"`
+}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/IsraeliPS/GoMongo/config"
 	"github.com/IsraeliPS/GoMongo/db"
 	"github.com/IsraeliPS/GoMongo/models"
 
@@ -36,13 +37,19 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
     collection := db.DB.Collection("users")
     cursor, err := collection.Find(context.Background(), bson.M{})
     if err != nil {
+        config.Logger.Error("Error fetching users", err)
         panic(err)
     }
     defer cursor.Close(context.Background())
 
+    //config.Logger.Info("User login attempted")
+    // ... other code
+    //config.Logger.Info("User login successful")
+
     for cursor.Next(context.Background()) {
         var user models.User
         if err := cursor.Decode(&user); err != nil {
+            config.Logger.Error("Error decoding user", err)
             panic(err)
         }
         users = append(users, user)
@@ -50,6 +57,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(users)
+    config.Logger.Info("Getusers successful sent")
 }
 
 // GetUser godoc
@@ -69,6 +77,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     id, err := primitive.ObjectIDFromHex(params["id"])
     if err != nil {
+        config.Logger.Error("Invalid ID", err)
         panic("Invalid ID")
     }
 
@@ -80,12 +89,14 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "User not found", http.StatusNotFound)
             return
         } else {
+            config.Logger.Error("Error fetching user", err)
             panic(err)
         }
     }
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(user)
+    config.Logger.Info("GetUser successful sent")
 }
 
 
@@ -104,12 +115,14 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 func CreateUser(w http.ResponseWriter, r *http.Request) {
     var user models.User
     if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+        config.Logger.Error("Error decoding user", err)
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
     // Validate input
     if err := validate.Struct(user); err != nil {
+        config.Logger.Error("Error validating user", err)
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
@@ -119,6 +132,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
     // result, err := collection.InsertOne(context.Background(), user)
     _, err := collection.InsertOne(context.Background(), user)
     if err != nil {
+        config.Logger.Error("Error inserting user", err)
         panic(err)
     }
 
@@ -134,6 +148,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
     // json.NewEncoder(w).Encode(result.InsertedID)
     w.WriteHeader(http.StatusCreated)
     json.NewEncoder(w).Encode(response)
+    config.Logger.Info("Create user successfully")
 }
 
 // UpdateUser godoc
@@ -154,18 +169,21 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     id, err := primitive.ObjectIDFromHex(params["id"])
     if err != nil {
+        config.Logger.Error("Invalid ID", err)
         http.Error(w, "Invalid ID", http.StatusBadRequest)
         return
     }
 
     var user models.User
     if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+        config.Logger.Error("Error decoding user", err)
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
     // Validate input
     if err := validate.Struct(user); err != nil {
+        config.Logger.Error("Error validating user", err)
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
@@ -175,9 +193,11 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
     collection := db.DB.Collection("users")
     result, err := collection.ReplaceOne(context.Background(), bson.M{"_id": id}, user)
     if err != nil {
+        config.Logger.Error("Error updating user", err)
         panic(err)
     }
     if result.MatchedCount == 0 {
+        config.Logger.Error("User not found", err)
         http.Error(w, "User not found", http.StatusNotFound)
         return
     }
@@ -192,6 +212,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
+    config.Logger.Info("Update user successfully")
 }
 
 // DeleteUser godoc
@@ -211,6 +232,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     id, err := primitive.ObjectIDFromHex(params["id"])
     if err != nil {
+        config.Logger.Error("Invalid ID", err)
         http.Error(w, "Invalid ID", http.StatusBadRequest)
         return
     }
@@ -218,9 +240,11 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
     collection := db.DB.Collection("users")
     result, err := collection.DeleteOne(context.Background(), bson.M{"_id": id})
     if err != nil {
+        config.Logger.Error("Error deleting user", err)
         panic(err)
     }
     if result.DeletedCount == 0 {
+        config.Logger.Error("User not found", err)
         http.Error(w, "User not found", http.StatusNotFound)
         return
     }
@@ -229,6 +253,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusNoContent)
     json.NewEncoder(w).Encode(response)
+    config.Logger.Info("Delete user successfully")
 }
 
 // Login godoc
@@ -246,12 +271,17 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 func Login(w http.ResponseWriter, r *http.Request) {
     var creds models.Credentials
     if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+        config.Logger.Error("Error decoding credentials", err)
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
+
+    config.Logger.Info("User login attempted")
+    
     // Validate input
     if err := validate.Struct(creds); err != nil {
+        config.Logger.Error("Error validating credentials", err)
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
@@ -261,14 +291,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
     err := collection.FindOne(context.Background(), bson.M{"email": creds.Email}).Decode(&user)
     if err != nil {
         if err == mongo.ErrNoDocuments {
+            config.Logger.Error("Invalid credentials", err)
             http.Error(w, "Invalid credentials", http.StatusUnauthorized)
             return
         } else {
+            config.Logger.Error("Error fetching user", err)
             panic(err)
         }
     }
 
     if user.Password != creds.Password {
+        config.Logger.Error("Invalid credentials", err)
         http.Error(w, "Invalid credentials", http.StatusUnauthorized)
         return
     }
@@ -284,6 +317,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
     tokenString, err := token.SignedString(jwtKey)
     if err != nil {
+        config.Logger.Error("Error signing token", err)
         panic(err)
     }
 
@@ -302,4 +336,5 @@ func Login(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(response)
+    config.Logger.Info("Login successful")
 }

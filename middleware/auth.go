@@ -19,7 +19,8 @@ func JWTAuthentication(next http.Handler) http.Handler {
         }
 
         bearerToken := strings.Split(authHeader, " ")
-        if len(bearerToken) != 2 {
+        fmt.Println("bearerToken", bearerToken)
+        if len(bearerToken) != 1 {
             http.Error(w, "Invalid authorization token", http.StatusUnauthorized)
             return
         }

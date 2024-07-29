@@ -11,6 +11,7 @@ import (
 	_ "github.com/IsraeliPS/GoMongo/docs"
 	"github.com/IsraeliPS/GoMongo/handlers"
 	"github.com/IsraeliPS/GoMongo/middleware"
+	"github.com/IsraeliPS/GoMongo/models"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -39,6 +40,9 @@ import (
 func main() {
     config.LoadEnv()
     router := mux.NewRouter()
+
+    config.InitLogger() // Initialize logger
+
     
     // Define routes
     api:= router.PathPrefix("/api").Subrouter()
@@ -50,6 +54,10 @@ func main() {
    // Protected routes
     protectedRoutes := api.PathPrefix("").Subrouter()
     protectedRoutes.Use(middleware.JWTAuthentication)
+    protectedRoutes.Handle("/users/{id}", middleware.ValidationMiddleware(models.User{})(http.HandlerFunc(handlers.GetUser))).Methods("GET")
+    protectedRoutes.Handle("/users", middleware.ValidationMiddleware(models.User{})(http.HandlerFunc(handlers.CreateUser))).Methods("POST")
+    protectedRoutes.Handle("/users/{id}", middleware.ValidationMiddleware(models.User{})(http.HandlerFunc(handlers.UpdateUser))).Methods("PUT")
+    protectedRoutes.Handle("/users/{id}", middleware.ValidationMiddleware(models.User{})(http.HandlerFunc(handlers.DeleteUser))).Methods("DELETE")
     protectedRoutes.HandleFunc("/users/{id}", handlers.GetUser).Methods("GET")
     protectedRoutes.HandleFunc("/users", handlers.CreateUser).Methods("POST")
     protectedRoutes.HandleFunc("/users/{id}", handlers.UpdateUser).Methods("PUT")
@@ -66,6 +74,9 @@ func main() {
 
     // Swagger documentation
     router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+    config.Logger.Println("Swagger started at http://localhost:8080/swagger/index.html")
+
     log.Println("Swagger started at http://localhost:8080/swagger/index.html")
 
     // Start server

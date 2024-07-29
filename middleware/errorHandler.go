@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"runtime/debug"
+
+	"github.com/IsraeliPS/GoMongo/config"
 )
 
 // ErrorResponse defines the structure for error responses
@@ -17,6 +20,8 @@ func ErrorHandler(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         defer func() {
             if err := recover(); err != nil {
+                config.Logger.Error("Unhandled error: ", err, "\n", string(debug.Stack()))
+                
                 log.Printf("Recovered from panic: %v", err)
                 var code int
                 var message string
